@@ -1,0 +1,142 @@
+services:
+
+  edge:
+    image: ubuntu:latest
+    container_name: edge
+    network_mode: host
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl && exec tail -f /dev/null"]
+    tty: true
+    init: true
+    environment:
+      - CRIBL_VOLUME_DIR=/opt/cribl
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - edge:/opt/cribl
+
+  worker:
+    image: ubuntu:latest
+    container_name: worker
+    network_mode: host
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl && exec tail -f /dev/null"]
+    tty: true
+    init: true
+    environment:
+      - CRIBL_VOLUME_DIR=/opt/cribl
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - worker:/opt/cribl
+
+  mariadb:
+    image: docker.io/bitnami/mariadb:latest
+    container_name: mariadb
+    expose:
+      - 3306
+    environment:
+      - MARIADB_USER=bn_wordpress
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=bitnami_wordpress
+      - ALLOW_EMPTY_PASSWORD=no
+      - NO_COLOR=true
+    volumes:
+      - mariadb_data:/bitnami/mariadb
+    networks:
+      - criblcandidatenetwork
+    depends_on:
+      - edge
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:9514"
+        syslog-facility: "local0"
+        tag: "mariadb"
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    ports:
+      - "8081:80"
+    environment:
+      - WORDPRESS_DB_HOST=mariadb:3306
+      - WORDPRESS_DB_NAME=bitnami_wordpress
+      - WORDPRESS_DB_USER=bn_wordpress
+      - WORDPRESS_DB_PASSWORD=${MARIADB_PASSWORD}
+      - WORDPRESS_DEBUG=1
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_CONFIG_EXTRA=define('WP_SITEURL', 'http://localhost:8081'); define('WP_HOME', 'http://localhost:8081');
+      - WORDPRESS_ADMIN_USER=${WORDPRESS_ADMIN_USER}
+      - WORDPRESS_ADMIN_PASSWORD=${WORDPRESS_ADMIN_PASSWORD}
+      - WORDPRESS_ADMIN_EMAIL=${WORDPRESS_ADMIN_EMAIL}
+    volumes:
+      - wordpress_data:/var/www/html
+    depends_on:
+      - mariadb
+      - edge
+    networks:
+      - criblcandidatenetwork
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:9514"
+        syslog-facility: "local1"
+        tag: "wordpress"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    ports:
+      - "8082:80"
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_PORT=3306
+      - PMA_USER=bn_wordpress
+      - PMA_PASSWORD=${MARIADB_PASSWORD}
+      - PMA_ARBITRARY=1
+    depends_on:
+      - mariadb
+      - edge
+    networks:
+      - criblcandidatenetwork
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:9514"
+        syslog-facility: "local2"
+        tag: "phpmyadmin"
+
+  minioserver:
+    image: docker.io/minio/minio:latest
+    container_name: minioserver
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    networks:
+      - criblcandidatenetwork
+    depends_on:
+      - edge
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:9514"
+        syslog-facility: "local3"
+        tag: "minioserver"
+
+networks:
+  criblcandidatenetwork:
+
+volumes:
+  edge:
+  mariadb_data:
+  wordpress_data:
+  minio_data:
+  worker:
