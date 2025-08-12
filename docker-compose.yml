@@ -27,7 +27,7 @@ services:
       - worker:/opt/cribl
 
   mariadb:
-    image: docker.io/bitnami/mariadb:latest
+    image: mariadb:latest
     container_name: mariadb
     expose:
       - 3306
