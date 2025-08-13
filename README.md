@@ -1,4 +1,5 @@
-candidate_lab
-Docker compose file for SE candidates in the interview process
+### Interviewing Candidates Lab
+---
+This repository contains a **Docker Compose file** for candidates to use during the interview process.
 
-Lab document is not included in this repository.  Contact hiring SE Manager for access.
+The **lab document**** itself is not in this repository. Please contact the hiring SE Manager to get access to it.
