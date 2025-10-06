@@ -3,6 +3,8 @@ services:
   edge:
     image: ubuntu:latest
     container_name: edge
+    ports:
+      - "9514:9514"
     network_mode: host
     command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl && exec tail -f /dev/null"]
     tty: true
@@ -16,8 +18,10 @@ services:
   worker:
     image: ubuntu:latest
     container_name: worker
-    network_mode: host
-    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl && exec tail -f /dev/null"]
+    ports:
+      - "9000:9000"
+      - "10070:10070"
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl vim && exec tail -f /dev/null"]
     tty: true
     init: true
     environment:
