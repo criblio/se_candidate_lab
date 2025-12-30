@@ -26,6 +26,9 @@ services:
     init: true
     environment:
       - CRIBL_VOLUME_DIR=/opt/cribl
+      - DEBIAN_FRONTEND=noninteractive
+      - TZ=Etc/UTC
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - worker:/opt/cribl
