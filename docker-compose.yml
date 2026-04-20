@@ -4,16 +4,20 @@ services:
     image: ubuntu:latest
     container_name: edge
     ports:
-      - "9514:9514"
-    network_mode: host
-    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl && exec tail -f /dev/null"]
+      - "9514:9514/udp"
+      - "9514:9514/tcp"
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y tzdata curl && exec tail -f /dev/null"]
     tty: true
     init: true
     environment:
       - CRIBL_VOLUME_DIR=/opt/cribl
+      - DEBIAN_FRONTEND=noninteractive
+      - TZ=Etc/UTC
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - edge:/opt/cribl
+    networks:
+      - criblcandidatenetwork
 
   worker:
     image: ubuntu:latest
@@ -21,17 +25,18 @@ services:
     ports:
       - "9000:9000"
       - "10070:10070"
-    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl vim && exec tail -f /dev/null"]
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y tzdata curl vim && exec tail -f /dev/null"]
     tty: true
     init: true
     environment:
       - CRIBL_VOLUME_DIR=/opt/cribl
       - DEBIAN_FRONTEND=noninteractive
       - TZ=Etc/UTC
-
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - worker:/opt/cribl
+    networks:
+      - criblcandidatenetwork
 
   mariadb:
     image: mariadb:latest
@@ -120,7 +125,7 @@ services:
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
       - "9001:9000"
-      - "9002:9001"  
+      - "9002:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -147,3 +152,4 @@ volumes:
   wordpress_data:
   minio_data:
   worker:
+
